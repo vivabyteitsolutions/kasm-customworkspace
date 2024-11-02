@@ -64,12 +64,6 @@ RUN wget -O /tmp/vscode.deb "https://code.visualstudio.com/sha/download?build=st
     && apt-get install -y /tmp/vscode.deb \
     && rm /tmp/vscode.deb
 
-# Install ProtonMail Bridge
-RUN wget -O /tmp/protonmail-bridge.deb "https://protonmail.com/download/bridge/latest" \
-    && apt-get update \
-    && apt-get install -y /tmp/protonmail-bridge.deb \
-    && rm /tmp/protonmail-bridge.deb
-
 # Set Firefox as the default browser system-wide
 RUN update-alternatives --install /usr/bin/x-www-browser x-www-browser /usr/bin/firefox 200 \
     && update-alternatives --set x-www-browser /usr/bin/firefox \
@@ -116,10 +110,6 @@ RUN echo "[Desktop Entry]\nVersion=1.0\nType=Application\nName=Telegram\nExec=/u
 RUN echo "[Desktop Entry]\nVersion=1.0\nType=Application\nName=Visual Studio Code\nExec=/usr/bin/code\nIcon=code\nTerminal=false\nCategories=Development;IDE;" > /usr/share/applications/vscode.desktop \
     && chmod +x /usr/share/applications/vscode.desktop
 
-# Create a desktop shortcut for ProtonMail Bridge
-RUN echo "[Desktop Entry]\nVersion=1.0\nType=Application\nName=ProtonMail Bridge\nExec=/usr/bin/protonmail-bridge\nIcon=protonmail-bridge\nTerminal=false\nCategories=Network;Mail;" > /usr/share/applications/protonmail.desktop \
-    && chmod +x /usr/share/applications/protonmail.desktop
-
 # Create a desktop shortcut for WhatsApp Web
 RUN echo "[Desktop Entry]\nVersion=1.0\nType=Application\nName=WhatsApp Web\nExec=firefox https://web.whatsapp.com\nIcon=firefox\nTerminal=false\nCategories=Network;Chat;" > /usr/share/applications/whatsapp-web.desktop \
     && chmod +x /usr/share/applications/whatsapp-web.desktop
@@ -136,7 +126,6 @@ RUN mkdir -p $HOME/Desktop \
     && cp /usr/share/applications/thunderbird.desktop $HOME/Desktop/ \
     && cp /usr/share/applications/telegram.desktop $HOME/Desktop/ \
     && cp /usr/share/applications/vscode.desktop $HOME/Desktop/ \
-    && cp /usr/share/applications/protonmail.desktop $HOME/Desktop/ \
     && cp /usr/share/applications/whatsapp-web.desktop $HOME/Desktop/ \
     && chmod +x $HOME/Desktop/intellij.desktop \
     && chmod +x $HOME/Desktop/pycharm.desktop \
@@ -148,7 +137,6 @@ RUN mkdir -p $HOME/Desktop \
     && chmod +x $HOME/Desktop/thunderbird.desktop \
     && chmod +x $HOME/Desktop/telegram.desktop \
     && chmod +x $HOME/Desktop/vscode.desktop \
-    && chmod +x $HOME/Desktop/protonmail.desktop \
     && chmod +x $HOME/Desktop/whatsapp-web.desktop
 
 ######### End Customizations ###########
