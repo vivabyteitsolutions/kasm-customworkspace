@@ -1,3 +1,4 @@
+## CUSTOM IMAGE FOR KASM WORKSPACE WITH SOME DEV UTILS AND OTHER APPS ##
 FROM kasmweb/core-ubuntu-focal:1.16.0
 USER root
 
