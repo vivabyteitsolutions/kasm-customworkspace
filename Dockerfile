@@ -62,8 +62,14 @@ RUN wget -O /tmp/telegram.deb "https://telegram.org/dl/desktop/linux" \
 # Install Visual Studio Code
 RUN wget -O /tmp/vscode.deb "https://code.visualstudio.com/sha/download?build=stable&os=linux-deb-x64" \
     && apt-get update \
-    && apt-get install -y /tmp/vscode.deb \
+    && dpkg -i /tmp/vscode.deb; apt-get install -f -y \
     && rm /tmp/vscode.deb
+
+# Install ProtonMail Bridge
+RUN wget -O /tmp/protonmail-bridge.deb "https://proton.me/download/bridge/protonmail-bridge_3.14.0-1_amd64.deb" \
+    && apt-get update \
+    && apt-get install -y /tmp/protonmail-bridge.deb \
+    && rm /tmp/protonmail-bridge.deb
 
 # Set Firefox as the default browser system-wide
 RUN update-alternatives --install /usr/bin/x-www-browser x-www-browser /usr/bin/firefox 200 \
@@ -111,10 +117,6 @@ RUN echo "[Desktop Entry]\nVersion=1.0\nType=Application\nName=Telegram\nExec=/u
 RUN echo "[Desktop Entry]\nVersion=1.0\nType=Application\nName=Visual Studio Code\nExec=/usr/bin/code\nIcon=code\nTerminal=false\nCategories=Development;IDE;" > /usr/share/applications/vscode.desktop \
     && chmod +x /usr/share/applications/vscode.desktop
 
-# Create a desktop shortcut for WhatsApp Web
-RUN echo "[Desktop Entry]\nVersion=1.0\nType=Application\nName=WhatsApp Web\nExec=firefox https://web.whatsapp.com\nIcon=firefox\nTerminal=false\nCategories=Network;Chat;" > /usr/share/applications/whatsapp-web.desktop \
-    && chmod +x /usr/share/applications/whatsapp-web.desktop
-
 # Create user-specific shortcuts on the desktop
 RUN mkdir -p $HOME/Desktop \
     && cp /usr/share/applications/intellij.desktop $HOME/Desktop/ \
@@ -127,7 +129,6 @@ RUN mkdir -p $HOME/Desktop \
     && cp /usr/share/applications/thunderbird.desktop $HOME/Desktop/ \
     && cp /usr/share/applications/telegram.desktop $HOME/Desktop/ \
     && cp /usr/share/applications/vscode.desktop $HOME/Desktop/ \
-    && cp /usr/share/applications/whatsapp-web.desktop $HOME/Desktop/ \
     && chmod +x $HOME/Desktop/intellij.desktop \
     && chmod +x $HOME/Desktop/pycharm.desktop \
     && chmod +x $HOME/Desktop/phpstorm.desktop \
@@ -137,8 +138,7 @@ RUN mkdir -p $HOME/Desktop \
     && chmod +x $HOME/Desktop/onlyoffice.desktop \
     && chmod +x $HOME/Desktop/thunderbird.desktop \
     && chmod +x $HOME/Desktop/telegram.desktop \
-    && chmod +x $HOME/Desktop/vscode.desktop \
-    && chmod +x $HOME/Desktop/whatsapp-web.desktop
+    && chmod +x $HOME/Desktop/vscode.desktop
 
 ######### End Customizations ###########
 
