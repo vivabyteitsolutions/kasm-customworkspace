@@ -1,151 +1,145 @@
-## CUSTOM IMAGE FOR KASM WORKSPACE WITH SOME DEV UTILS AND OTHER APPS ##
 FROM kasmweb/core-ubuntu-focal:1.16.0
 USER root
 
-ENV HOME /home/kasm-default-profile
-ENV STARTUPDIR /dockerstartup
-ENV INST_SCRIPTS $STARTUPDIR/install
+ENV HOME=/home/kasm-default-profile \
+    STARTUPDIR=/dockerstartup \
+    INST_SCRIPTS=/dockerstartup/install
+
 WORKDIR $HOME
 
-######### Customize Container Here ###########
+# Combine all apt-get commands and cleanup in one layer
+RUN apt-get update && apt-get install -y \
+    wget \
+    unzip \
+    gnupg2 \
+    software-properties-common \
+    apt-utils \
+    firefox \
+    git \
+    remmina \
+    remmina-plugin-rdp \
+    remmina-plugin-vnc \
+    thunderbird \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install required packages
-RUN apt-get update && apt-get install -y wget unzip gnupg2 software-properties-common apt-utils
+# Download and install all JetBrains IDEs in one layer
+RUN mkdir -p /opt/intellij /opt/pycharm /opt/phpstorm && \
+    wget -q -O - https://download-cdn.jetbrains.com/idea/ideaIU-2024.2.4.tar.gz | tar xz --strip-components=1 -C /opt/intellij && \
+    wget -q -O - https://download-cdn.jetbrains.com/python/pycharm-professional-2024.2.4.tar.gz | tar xz --strip-components=1 -C /opt/pycharm && \
+    wget -q -O - https://download-cdn.jetbrains.com/webide/PhpStorm-2024.2.4.tar.gz | tar xz --strip-components=1 -C /opt/phpstorm
 
-# Download and install IntelliJ IDEA Ultimate Edition
-RUN wget -O /tmp/intellij.tar.gz https://download-cdn.jetbrains.com/idea/ideaIU-2024.2.4.tar.gz \
-    && mkdir -p /opt/intellij \
-    && tar -xzf /tmp/intellij.tar.gz --strip-components=1 -C /opt/intellij \
-    && rm /tmp/intellij.tar.gz
+# Install Discord, OnlyOffice, and VSCode in one layer
+RUN wget -q -O discord.deb "https://discordapp.com/api/download/stable?platform=linux&format=deb" && \
+    wget -q -O onlyoffice.deb "https://github.com/ONLYOFFICE/DesktopEditors/releases/latest/download/onlyoffice-desktopeditors_amd64.deb" && \
+    wget -q -O vscode.deb "https://vscode.download.prss.microsoft.com/dbazure/download/stable/65edc4939843c90c34d61f4ce11704f09d3e5cb6/code_1.95.1-1730355339_amd64.deb" && \
+    apt-get update && \
+    apt-get install -y ./discord.deb ./onlyoffice.deb ./vscode.deb && \
+    rm *.deb && \
+    rm -rf /var/lib/apt/lists/*
 
-# Download and install PyCharm Professional
-RUN wget -O /tmp/pycharm.tar.gz https://download-cdn.jetbrains.com/python/pycharm-professional-2024.2.4.tar.gz \
-    && mkdir -p /opt/pycharm \
-    && tar -xzf /tmp/pycharm.tar.gz --strip-components=1 -C /opt/pycharm \
-    && rm /tmp/pycharm.tar.gz
+# Set Firefox as default browser
+RUN update-alternatives --install /usr/bin/x-www-browser x-www-browser /usr/bin/firefox 200 && \
+    update-alternatives --set x-www-browser /usr/bin/firefox && \
+    update-alternatives --install /usr/bin/gnome-www-browser gnome-www-browser /usr/bin/firefox 200 && \
+    update-alternatives --set gnome-www-browser /usr/bin/firefox
 
-# Download and install PHPStorm
-RUN wget -O /tmp/phpstorm.tar.gz https://download-cdn.jetbrains.com/webide/PhpStorm-2024.2.4.tar.gz \
-    && mkdir -p /opt/phpstorm \
-    && tar -xzf /tmp/phpstorm.tar.gz --strip-components=1 -C /opt/phpstorm \
-    && rm /tmp/phpstorm.tar.gz
+# Create desktop entries for all applications in one layer
+COPY <<EOF /usr/share/applications/
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=IntelliJ IDEA
+Exec=/opt/intellij/bin/idea
+Icon=/opt/intellij/bin/idea.png
+Terminal=false
+Categories=Development;IDE;
 
-# Install Firefox
-RUN apt-get update && apt-get install -y firefox
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=PyCharm
+Exec=/opt/pycharm/bin/pycharm.sh
+Icon=/opt/pycharm/bin/pycharm.png
+Terminal=false
+Categories=Development;IDE;
 
-# Install Git
-RUN apt-get update && apt-get install -y git
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=PHPStorm
+Exec=/opt/phpstorm/bin/phpstorm.sh
+Icon=/opt/phpstorm/bin/phpstorm.png
+Terminal=false
+Categories=Development;IDE;
 
-# Install Remmina and its plugins
-RUN apt-get update && apt-get install -y remmina remmina-plugin-rdp remmina-plugin-vnc
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Firefox
+Exec=firefox
+Icon=firefox
+Terminal=false
+Categories=Network;WebBrowser;
 
-# Install Discord
-RUN wget -O /tmp/discord.deb "https://discordapp.com/api/download/stable?platform=linux&format=deb" \
-    && apt-get update \
-    && apt-get install -y /tmp/discord.deb \
-    && rm /tmp/discord.deb
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Remmina
+Exec=remmina
+Icon=org.remmina.Remmina
+Terminal=false
+Categories=Network;RemoteAccess;
 
-# Install OnlyOffice from the latest link
-RUN wget -O /tmp/onlyoffice.deb "https://github.com/ONLYOFFICE/DesktopEditors/releases/latest/download/onlyoffice-desktopeditors_amd64.deb" \
-    && apt-get update \
-    && apt-get install -y /tmp/onlyoffice.deb \
-    && rm /tmp/onlyoffice.deb
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Discord
+Exec=/usr/bin/discord --no-sandbox
+Icon=discord
+Terminal=false
+Categories=Network;Chat;
 
-# Install Thunderbird
-RUN apt-get update && apt-get install -y thunderbird
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=OnlyOffice
+Exec=/usr/bin/onlyoffice-desktopeditors
+Icon=onlyoffice-desktopeditors
+Terminal=false
+Categories=Office;
 
-# Install Telegram Desktop
-RUN wget -O /tmp/telegram.deb "https://telegram.org/dl/desktop/linux" \
-    && dpkg -i /tmp/telegram.deb; apt-get install -f -y \
-    && rm /tmp/telegram.deb
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Thunderbird
+Exec=thunderbird
+Icon=thunderbird
+Terminal=false
+Categories=Network;Mail;
 
-# Install Visual Studio Code
-RUN wget -O /tmp/vscode.deb "https://code.visualstudio.com/sha/download?build=stable&os=linux-deb-x64" \
-    && apt-get update \
-    && dpkg -i /tmp/vscode.deb; apt-get install -f -y \
-    && rm /tmp/vscode.deb
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Visual Studio Code
+Exec=/usr/bin/code --no-sandbox
+Icon=code
+Terminal=false
+Categories=Development;IDE;
+EOF
 
-# Install ProtonMail Bridge
-RUN wget -O /tmp/protonmail-bridge.deb "https://proton.me/download/bridge/protonmail-bridge_3.14.0-1_amd64.deb" \
-    && apt-get update \
-    && apt-get install -y /tmp/protonmail-bridge.deb \
-    && rm /tmp/protonmail-bridge.deb
+# Copy VSCode icon and make desktop entries executable
+RUN cp /usr/share/code/resources/app/resources/linux/code.png /usr/share/pixmaps/code.png || true && \
+    chmod +x /usr/share/applications/*.desktop
 
-# Set Firefox as the default browser system-wide
-RUN update-alternatives --install /usr/bin/x-www-browser x-www-browser /usr/bin/firefox 200 \
-    && update-alternatives --set x-www-browser /usr/bin/firefox \
-    && update-alternatives --install /usr/bin/gnome-www-browser gnome-www-browser /usr/bin/firefox 200 \
-    && update-alternatives --set gnome-www-browser /usr/bin/firefox
+# Create Desktop shortcuts and set permissions in one layer
+RUN mkdir -p $HOME/Desktop && \
+    cp /usr/share/applications/*.desktop $HOME/Desktop/ && \
+    chmod +x $HOME/Desktop/*.desktop && \
+    chown -R 1000:0 $HOME && \
+    $STARTUPDIR/set_user_permission.sh $HOME
 
-# Create a desktop shortcut for IntelliJ
-RUN echo "[Desktop Entry]\nVersion=1.0\nType=Application\nName=IntelliJ IDEA\nExec=/opt/intellij/bin/idea\nIcon=/opt/intellij/bin/idea.png\nTerminal=false\nCategories=Development;IDE;" > /usr/share/applications/intellij.desktop \
-    && chmod +x /usr/share/applications/intellij.desktop
-
-# Create a desktop shortcut for PyCharm
-RUN echo "[Desktop Entry]\nVersion=1.0\nType=Application\nName=PyCharm\nExec=/opt/pycharm/bin/pycharm.sh\nIcon=/opt/pycharm/bin/pycharm.png\nTerminal=false\nCategories=Development;IDE;" > /usr/share/applications/pycharm.desktop \
-    && chmod +x /usr/share/applications/pycharm.desktop
-
-# Create a desktop shortcut for PHPStorm
-RUN echo "[Desktop Entry]\nVersion=1.0\nType=Application\nName=PHPStorm\nExec=/opt/phpstorm/bin/phpstorm.sh\nIcon=/opt/phpstorm/bin/phpstorm.png\nTerminal=false\nCategories=Development;IDE;" > /usr/share/applications/phpstorm.desktop \
-    && chmod +x /usr/share/applications/phpstorm.desktop
-
-# Create a desktop shortcut for Firefox
-RUN echo "[Desktop Entry]\nVersion=1.0\nType=Application\nName=Firefox\nExec=firefox\nIcon=firefox\nTerminal=false\nCategories=Network;WebBrowser;" > /usr/share/applications/firefox.desktop \
-    && chmod +x /usr/share/applications/firefox.desktop
-
-# Create a desktop shortcut for Remmina
-RUN echo "[Desktop Entry]\nVersion=1.0\nType=Application\nName=Remmina\nExec=remmina\nIcon=org.remmina.Remmina\nTerminal=false\nCategories=Network;RemoteAccess;" > /usr/share/applications/remmina.desktop \
-    && chmod +x /usr/share/applications/remmina.desktop
-
-# Create a desktop shortcut for Discord with the --no-sandbox argument
-RUN echo "[Desktop Entry]\nVersion=1.0\nType=Application\nName=Discord\nExec=/usr/bin/discord --no-sandbox\nIcon=discord\nTerminal=false\nCategories=Network;Chat;" > /usr/share/applications/discord.desktop \
-    && chmod +x /usr/share/applications/discord.desktop
-
-# Create a desktop shortcut for OnlyOffice
-RUN echo "[Desktop Entry]\nVersion=1.0\nType=Application\nName=OnlyOffice\nExec=/usr/bin/onlyoffice-desktopeditors\nIcon=onlyoffice\nTerminal=false\nCategories=Office;" > /usr/share/applications/onlyoffice.desktop \
-    && chmod +x /usr/share/applications/onlyoffice.desktop
-
-# Create a desktop shortcut for Thunderbird
-RUN echo "[Desktop Entry]\nVersion=1.0\nType=Application\nName=Thunderbird\nExec=thunderbird\nIcon=thunderbird\nTerminal=false\nCategories=Network;Mail;" > /usr/share/applications/thunderbird.desktop \
-    && chmod +x /usr/share/applications/thunderbird.desktop
-
-# Create a desktop shortcut for Telegram
-RUN echo "[Desktop Entry]\nVersion=1.0\nType=Application\nName=Telegram\nExec=/usr/bin/telegram-desktop\nIcon=telegram-desktop\nTerminal=false\nCategories=Network;Chat;" > /usr/share/applications/telegram.desktop \
-    && chmod +x /usr/share/applications/telegram.desktop
-
-# Create a desktop shortcut for Visual Studio Code
-RUN echo "[Desktop Entry]\nVersion=1.0\nType=Application\nName=Visual Studio Code\nExec=/usr/bin/code\nIcon=code\nTerminal=false\nCategories=Development;IDE;" > /usr/share/applications/vscode.desktop \
-    && chmod +x /usr/share/applications/vscode.desktop
-
-# Create user-specific shortcuts on the desktop
-RUN mkdir -p $HOME/Desktop \
-    && cp /usr/share/applications/intellij.desktop $HOME/Desktop/ \
-    && cp /usr/share/applications/pycharm.desktop $HOME/Desktop/ \
-    && cp /usr/share/applications/phpstorm.desktop $HOME/Desktop/ \
-    && cp /usr/share/applications/firefox.desktop $HOME/Desktop/ \
-    && cp /usr/share/applications/remmina.desktop $HOME/Desktop/ \
-    && cp /usr/share/applications/discord.desktop $HOME/Desktop/ \
-    && cp /usr/share/applications/onlyoffice.desktop $HOME/Desktop/ \
-    && cp /usr/share/applications/thunderbird.desktop $HOME/Desktop/ \
-    && cp /usr/share/applications/telegram.desktop $HOME/Desktop/ \
-    && cp /usr/share/applications/vscode.desktop $HOME/Desktop/ \
-    && chmod +x $HOME/Desktop/intellij.desktop \
-    && chmod +x $HOME/Desktop/pycharm.desktop \
-    && chmod +x $HOME/Desktop/phpstorm.desktop \
-    && chmod +x $HOME/Desktop/firefox.desktop \
-    && chmod +x $HOME/Desktop/remmina.desktop \
-    && chmod +x $HOME/Desktop/discord.desktop \
-    && chmod +x $HOME/Desktop/onlyoffice.desktop \
-    && chmod +x $HOME/Desktop/thunderbird.desktop \
-    && chmod +x $HOME/Desktop/telegram.desktop \
-    && chmod +x $HOME/Desktop/vscode.desktop
-
-######### End Customizations ###########
-
-RUN chown -R 1000:0 $HOME
-RUN $STARTUPDIR/set_user_permission.sh $HOME
-
-ENV HOME /home/kasm-user
+# Set up final user environment
+ENV HOME=/home/kasm-user
 WORKDIR $HOME
 RUN mkdir -p $HOME && chown -R 1000:0 $HOME
 
